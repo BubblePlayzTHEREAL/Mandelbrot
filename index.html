@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mandelbrot Set Viewer</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+            background-color: #000;
+        }
+        #canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+            cursor: grab;
+        }
+        #canvas:active {
+            cursor: grabbing;
+        }
+        #info {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: white;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 10px 15px;
+            border-radius: 5px;
+            font-size: 12px;
+            z-index: 100;
+        }
+        #controls {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: white;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 10px 15px;
+            border-radius: 5px;
+            font-size: 11px;
+            z-index: 100;
+            max-width: 200px;
+        }
+        #controls h3 {
+            margin: 0 0 10px 0;
+            font-size: 13px;
+        }
+        #controls ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        #controls li {
+            margin: 3px 0;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div id="info">
+        <div>Zoom: <span id="zoom">1.0</span>x</div>
+        <div>Center: (<span id="centerX">0</span>, <span id="centerY">0</span>)</div>
+        <div>FPS: <span id="fps">0</span></div>
+    </div>
+    <div id="controls">
+        <h3>Controls</h3>
+        <ul>
+            <li><strong>Mouse Wheel:</strong> Zoom</li>
+            <li><strong>Click & Drag:</strong> Pan</li>
+            <li><strong>Arrow Keys / WASD:</strong> Pan</li>
+            <li><strong>+/- Keys:</strong> Zoom</li>
+            <li><strong>R Key:</strong> Reset View</li>
+        </ul>
+    </div>
+    <script src="mandelbrot.js"></script>
+</body>
+</html>
