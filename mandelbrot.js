@@ -13,7 +13,7 @@ class MandelbrotViewer {
         this.centerX = -0.5;
         this.centerY = 0.0;
         this.zoom = 1.0;
-        this.maxIterations = 256;
+        this.maxIterations = 512;
 
         // Mouse state
         this.isDragging = false;
