@@ -215,7 +215,7 @@ class MandelbrotViewer {
             this.centerY = worldPos[1] - uv[1] / this.zoom;
             
             // Increase iterations as we zoom in
-            this.maxIterations = Math.floor(512 + Math.log2(this.zoom) * 50);
+            this.maxIterations = this.calculateIterations(this.zoom);
             
             this.updateInfo();
         });
@@ -236,12 +236,12 @@ class MandelbrotViewer {
             // Zoom with +/- keys
             if (e.key === '+' || e.key === '=') {
                 this.zoom *= 1.1;
-                this.maxIterations = Math.floor(512 + Math.log2(this.zoom) * 50);
+                this.maxIterations = this.calculateIterations(this.zoom);
                 this.updateInfo();
             }
             if (e.key === '-' || e.key === '_') {
                 this.zoom *= 0.9;
-                this.maxIterations = Math.floor(512 + Math.log2(this.zoom) * 50);
+                this.maxIterations = this.calculateIterations(this.zoom);
                 this.updateInfo();
             }
         });
@@ -286,6 +286,10 @@ class MandelbrotViewer {
         document.getElementById('centerX').textContent = this.centerX.toFixed(6);
         document.getElementById('centerY').textContent = this.centerY.toFixed(6);
         document.getElementById('iterations').textContent = this.maxIterations;
+    }
+
+    calculateIterations(zoom) {
+        return Math.floor(512 + Math.log2(zoom) * 50);
     }
 
     updateFPS() {
