@@ -9,11 +9,16 @@ class MandelbrotViewer {
             return;
         }
 
+        // Iteration calculation constants
+        this.BASE_ITERATIONS = 512;
+        this.ZOOM_MULTIPLIER = 50;
+        this.INITIAL_ITERATIONS = 2000;
+
         // View parameters
         this.centerX = -0.5;
         this.centerY = 0.0;
         this.zoom = 1.0;
-        this.maxIterations = 2000;
+        this.maxIterations = this.INITIAL_ITERATIONS;
 
         // Mouse state
         this.isDragging = false;
@@ -229,7 +234,7 @@ class MandelbrotViewer {
                 this.centerX = -0.5;
                 this.centerY = 0.0;
                 this.zoom = 1.0;
-                this.maxIterations = 2000;
+                this.maxIterations = this.INITIAL_ITERATIONS;
                 this.updateInfo();
             }
             
@@ -289,7 +294,7 @@ class MandelbrotViewer {
     }
 
     calculateIterations(zoom) {
-        return Math.floor(512 + Math.log2(zoom) * 50);
+        return Math.floor(this.BASE_ITERATIONS + Math.log2(zoom) * this.ZOOM_MULTIPLIER);
     }
 
     updateFPS() {
