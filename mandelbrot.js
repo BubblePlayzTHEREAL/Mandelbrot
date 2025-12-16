@@ -11,7 +11,7 @@ class MandelbrotViewer {
 
         // Iteration calculation constants
         this.BASE_ITERATIONS = 512;
-        this.ZOOM_MULTIPLIER = 50;
+        this.ZOOM_MULTIPLIER = 50; // Controls how aggressively iterations scale with zoom (5x more than original 10)
         this.INITIAL_ITERATIONS = 2000;
 
         // View parameters
@@ -294,7 +294,9 @@ class MandelbrotViewer {
     }
 
     calculateIterations(zoom) {
-        return Math.floor(this.BASE_ITERATIONS + Math.log2(zoom) * this.ZOOM_MULTIPLIER);
+        // Ensure zoom is positive to avoid Math.log2 returning -Infinity or NaN
+        const safeZoom = Math.max(zoom, 1.0);
+        return Math.floor(this.BASE_ITERATIONS + Math.log2(safeZoom) * this.ZOOM_MULTIPLIER);
     }
 
     updateFPS() {
