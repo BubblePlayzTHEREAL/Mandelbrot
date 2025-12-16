@@ -11,8 +11,8 @@ class MandelbrotViewer {
 
         // Iteration calculation constants
         this.BASE_ITERATIONS = 512;
-        this.ZOOM_MULTIPLIER = 50; // Controls how aggressively iterations scale with zoom (5x more than original 10)
-        this.INITIAL_ITERATIONS = 2000;
+        this.ZOOM_MULTIPLIER = 50; // Scales iterations logarithmically with zoom level
+        this.INITIAL_ITERATIONS = 2000; // High quality initial view
 
         // View parameters
         this.centerX = -0.5;
