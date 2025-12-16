@@ -13,7 +13,7 @@ class MandelbrotViewer {
         this.centerX = -0.5;
         this.centerY = 0.0;
         this.zoom = 1.0;
-        this.maxIterations = 512;
+        this.maxIterations = 2000;
 
         // Mouse state
         this.isDragging = false;
@@ -78,7 +78,7 @@ class MandelbrotViewer {
                 // Mandelbrot iteration
                 vec2 z = vec2(0.0, 0.0);
                 int i = 0;
-                for (int iter = 0; iter < 1000; iter++) {
+                for (int iter = 0; iter < 100000; iter++) {
                     if (iter >= u_maxIterations) break;
                     i = iter;
                     
@@ -215,7 +215,7 @@ class MandelbrotViewer {
             this.centerY = worldPos[1] - uv[1] / this.zoom;
             
             // Increase iterations as we zoom in
-            this.maxIterations = Math.min(1000, Math.floor(256 + Math.log2(this.zoom) * 10));
+            this.maxIterations = Math.floor(512 + Math.log2(this.zoom) * 50);
             
             this.updateInfo();
         });
@@ -229,19 +229,19 @@ class MandelbrotViewer {
                 this.centerX = -0.5;
                 this.centerY = 0.0;
                 this.zoom = 1.0;
-                this.maxIterations = 256;
+                this.maxIterations = 2000;
                 this.updateInfo();
             }
             
             // Zoom with +/- keys
             if (e.key === '+' || e.key === '=') {
                 this.zoom *= 1.1;
-                this.maxIterations = Math.min(1000, Math.floor(256 + Math.log2(this.zoom) * 10));
+                this.maxIterations = Math.floor(512 + Math.log2(this.zoom) * 50);
                 this.updateInfo();
             }
             if (e.key === '-' || e.key === '_') {
                 this.zoom *= 0.9;
-                this.maxIterations = Math.min(1000, Math.floor(256 + Math.log2(this.zoom) * 10));
+                this.maxIterations = Math.floor(512 + Math.log2(this.zoom) * 50);
                 this.updateInfo();
             }
         });
@@ -285,6 +285,7 @@ class MandelbrotViewer {
         document.getElementById('zoom').textContent = this.zoom.toFixed(2);
         document.getElementById('centerX').textContent = this.centerX.toFixed(6);
         document.getElementById('centerY').textContent = this.centerY.toFixed(6);
+        document.getElementById('iterations').textContent = this.maxIterations;
     }
 
     updateFPS() {
