@@ -55,7 +55,7 @@ The viewer uses WebGL fragment shaders to calculate the Mandelbrot set in parall
 
 By default, the viewer renders at a static resolution that matches your initial screen resolution when the page loads. This ensures consistent rendering quality and performance regardless of window resizing.
 
-**To use a custom resolution**, edit the initialization code in `index.html`:
+**To use a custom resolution**, edit the initialization code at the bottom of `mandelbrot.js`:
 
 ```javascript
 // Default: Uses your current screen resolution
