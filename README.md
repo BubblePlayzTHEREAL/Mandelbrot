@@ -5,6 +5,7 @@ An interactive GPU-accelerated Mandelbrot Set viewer built with WebGL. Explore t
 ## Features
 
 - **GPU Acceleration**: Uses WebGL shaders for fast rendering on your graphics card
+- **Static Resolution Rendering**: Renders at a fixed resolution (defaults to your initial screen resolution) for consistent performance and quality
 - **Interactive Controls**: 
   - Mouse wheel to zoom in/out
   - Click and drag to pan around
@@ -49,6 +50,25 @@ Then open your browser to `http://localhost:8000`
 ## How it Works
 
 The viewer uses WebGL fragment shaders to calculate the Mandelbrot set in parallel on your GPU. Each pixel is computed independently, allowing for real-time exploration even at high zoom levels. The shader automatically increases the maximum iteration count as you zoom in to maintain detail.
+
+### Resolution Configuration
+
+By default, the viewer renders at a static resolution that matches your initial screen resolution when the page loads. This ensures consistent rendering quality and performance regardless of window resizing.
+
+**To use a custom resolution**, edit the initialization code at the bottom of `mandelbrot.js`:
+
+```javascript
+// Default: Uses your current screen resolution
+new MandelbrotViewer();
+
+// Custom: Render at 1920x1080 (Full HD)
+new MandelbrotViewer(1920, 1080);
+
+// Custom: Render at 3840x2160 (4K)
+new MandelbrotViewer(3840, 2160);
+```
+
+The canvas will automatically scale to fit your browser window while maintaining the specified rendering resolution.
 
 ## Requirements
 
