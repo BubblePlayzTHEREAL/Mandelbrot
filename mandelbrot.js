@@ -101,12 +101,12 @@ class MandelbrotViewer {
                 const float split = 4097.0; // 2^12 + 1
                 float t1 = a.x * split;
                 float a_hi = t1 - (t1 - a.x);
-                float a_lo_temp = a.x - a_hi;
+                float a_dekker_lo = a.x - a_hi;
                 float t2 = b.x * split;
                 float b_hi = t2 - (t2 - b.x);
-                float b_lo_temp = b.x - b_hi;
+                float b_dekker_lo = b.x - b_hi;
                 
-                float e = ((a_hi * b_hi - p) + a_hi * b_lo_temp + a_lo_temp * b_hi) + a_lo_temp * b_lo_temp;
+                float e = ((a_hi * b_hi - p) + a_hi * b_dekker_lo + a_dekker_lo * b_hi) + a_dekker_lo * b_dekker_lo;
                 e = e + a.x * b.y + a.y * b.x + a.y * b.y;
                 float z = p + e;
                 return vec2(z, e - (z - p));
@@ -198,12 +198,19 @@ class MandelbrotViewer {
                     }
                 }
                 
+                // If we didn't escape, compute final squared magnitude anyway for consistency
+                if (final_length_squared == 0.0) {
+                    final_length_squared = z_x.x * z_x.x + z_y.x * z_y.x;
+                }
+                
                 // Coloring
                 if (i >= u_maxIterations - 1) {
                     gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
                 } else {
                     // Smooth coloring using squared length
-                    float smoothI = float(i) - log2(log2(sqrt(final_length_squared)));
+                    // Guard against log of very small or zero values
+                    float safe_length_squared = max(final_length_squared, 0.0001);
+                    float smoothI = float(i) - log2(log2(sqrt(safe_length_squared)));
                     float t = smoothI / float(u_maxIterations);
                     vec3 color = palette(t);
                     gl_FragColor = vec4(color, 1.0);
