@@ -94,10 +94,20 @@ class MandelbrotViewer {
             }
             
             // DS multiplication: (a_hi, a_lo) * (b_hi, b_lo)
+            // Using Dekker's algorithm for accurate product
             vec2 ds_mul(vec2 a, vec2 b) {
                 float p = a.x * b.x;
-                float e = p - a.x * b.x;
-                e = e + a.x * b.y + a.y * b.x;
+                // Calculate the rounding error using Dekker split
+                const float split = 4097.0; // 2^12 + 1
+                float t1 = a.x * split;
+                float a_hi = t1 - (t1 - a.x);
+                float a_lo_temp = a.x - a_hi;
+                float t2 = b.x * split;
+                float b_hi = t2 - (t2 - b.x);
+                float b_lo_temp = b.x - b_hi;
+                
+                float e = ((a_hi * b_hi - p) + a_hi * b_lo_temp + a_lo_temp * b_hi) + a_lo_temp * b_lo_temp;
+                e = e + a.x * b.y + a.y * b.x + a.y * b.y;
                 float z = p + e;
                 return vec2(z, e - (z - p));
             }
@@ -132,17 +142,27 @@ class MandelbrotViewer {
                 vec2 uv = (gl_FragCoord.xy / u_resolution) * 2.0 - 1.0;
                 uv.x *= u_resolution.x / u_resolution.y;
                 
-                // Convert uv to DS format and divide by zoom
+                // Convert uv to DS format
                 vec2 uv_x_ds = ds_set(uv.x);
                 vec2 uv_y_ds = ds_set(uv.y);
                 
-                // Divide by zoom (multiply by 1/zoom)
-                float inv_zoom = 1.0 / u_zoom.x;
-                vec2 inv_zoom_ds = ds_set(inv_zoom);
+                // Use zoom as DS and divide
+                // uv / zoom in DS arithmetic
+                vec2 zoom_ds = u_zoom;
+                
+                // Simple division approximation for DS: a / b ≈ a * (1/b)
+                // For better accuracy at extreme zooms, we compute 1/zoom in DS
+                float inv_zoom_hi = 1.0 / zoom_ds.x;
+                // Refine: inv_zoom_lo = (1 - inv_zoom_hi * zoom) / zoom
+                float error = 1.0 - inv_zoom_hi * zoom_ds.x - inv_zoom_hi * zoom_ds.y;
+                float inv_zoom_lo = error / zoom_ds.x;
+                vec2 inv_zoom_ds = vec2(inv_zoom_hi, inv_zoom_lo);
+                
                 uv_x_ds = ds_mul(uv_x_ds, inv_zoom_ds);
                 uv_y_ds = ds_mul(uv_y_ds, inv_zoom_ds);
                 
                 // Add center in DS arithmetic
+                // u_center = (x_hi, x_lo, y_hi, y_lo)
                 vec2 c_x = ds_add(vec2(u_center.x, u_center.y), uv_x_ds);
                 vec2 c_y = ds_add(vec2(u_center.z, u_center.w), uv_y_ds);
                 
@@ -217,21 +237,16 @@ class MandelbrotViewer {
 
     // Split a double into high and low parts for double-single arithmetic
     // This uses the Dekker split algorithm to separate a float64 into two parts
-    // that when added together give the original value, but each can be represented
-    // more precisely in float32 operations
     splitDouble(value) {
-        // For very large or very small numbers, just return the value as high part
-        // The shader will do the actual high-precision work
-        const high = value;
+        // Use Dekker splitting with a constant appropriate for splitting float64 into float32 pairs
+        // The split constant is 2^27 + 1 for float64 -> float32 precision
+        const split = 134217729.0; // 2^27 + 1
         
-        // Calculate the low part by subtracting high from original
-        // In JavaScript (float64), this gives us a residual
+        const temp = value * split;
+        const high = temp - (temp - value);
         const low = value - high;
         
-        // However, since both JavaScript and the shader use different precisions,
-        // we'll let the shader handle the main precision work
-        // For now, pass the full value as high and 0 as low
-        return [high, 0.0];
+        return [high, low];
     }
 
     compileShader(type, source) {
@@ -425,6 +440,7 @@ class MandelbrotViewer {
 
         // Set uniforms
         this.gl.uniform2f(this.resolutionLocation, this.canvas.width, this.canvas.height);
+        // Pack as (x_hi, x_lo, y_hi, y_lo) to match shader's usage
         this.gl.uniform4f(this.centerLocation, centerXHi, centerXLo, centerYHi, centerYLo);
         this.gl.uniform2f(this.zoomLocation, zoomHi, zoomLo);
         this.gl.uniform1i(this.maxIterationsLocation, this.maxIterations);
