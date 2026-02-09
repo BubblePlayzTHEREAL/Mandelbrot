@@ -121,13 +121,13 @@ class MandelbrotViewer {
                 return vec2(a_hi, a_lo);
             }
             
-            // Compare DS number squared magnitude with threshold
-            bool ds_length_greater(vec2 x, vec2 y, float threshold) {
+            // Compare DS number squared magnitude with threshold squared
+            bool ds_length_squared_greater(vec2 x, vec2 y, float threshold_squared) {
                 // Compute x^2 + y^2 in DS arithmetic
                 vec2 xx = ds_mul(x, x);
                 vec2 yy = ds_mul(y, y);
                 vec2 sum = ds_add(xx, yy);
-                return sum.x > threshold * threshold;
+                return sum.x > threshold_squared;
             }
 
             vec3 palette(float t) {
@@ -170,7 +170,8 @@ class MandelbrotViewer {
                 vec2 z_x = vec2(0.0, 0.0);
                 vec2 z_y = vec2(0.0, 0.0);
                 int i = 0;
-                float final_length = 0.0;
+                float final_length_squared = 0.0;
+                const float ESCAPE_RADIUS_SQUARED = 4.0; // 2.0^2
                 
                 for (int iter = 0; iter < 100000; iter++) {
                     if (iter >= u_maxIterations) break;
@@ -190,9 +191,9 @@ class MandelbrotViewer {
                     z_x = new_z_x;
                     z_y = new_z_y;
                     
-                    // Check if magnitude > 2.0
-                    if (ds_length_greater(z_x, z_y, 2.0)) {
-                        final_length = sqrt(z_x.x * z_x.x + z_y.x * z_y.x);
+                    // Check if squared magnitude > 4.0
+                    if (ds_length_squared_greater(z_x, z_y, ESCAPE_RADIUS_SQUARED)) {
+                        final_length_squared = z_x.x * z_x.x + z_y.x * z_y.x;
                         break;
                     }
                 }
@@ -201,8 +202,8 @@ class MandelbrotViewer {
                 if (i >= u_maxIterations - 1) {
                     gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
                 } else {
-                    // Smooth coloring
-                    float smoothI = float(i) - log2(log2(final_length));
+                    // Smooth coloring using squared length
+                    float smoothI = float(i) - log2(log2(sqrt(final_length_squared)));
                     float t = smoothI / float(u_maxIterations);
                     vec3 color = palette(t);
                     gl_FragColor = vec4(color, 1.0);
