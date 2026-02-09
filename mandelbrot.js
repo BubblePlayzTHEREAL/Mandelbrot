@@ -1,6 +1,6 @@
 // Mandelbrot Set Viewer with GPU acceleration using WebGL
 class MandelbrotViewer {
-    constructor() {
+    constructor(customWidth = null, customHeight = null) {
         this.canvas = document.getElementById('canvas');
         this.gl = this.canvas.gl = this.canvas.getContext('webgl2') || this.canvas.getContext('webgl');
         
@@ -8,6 +8,10 @@ class MandelbrotViewer {
             alert('WebGL is not supported in your browser!');
             return;
         }
+
+        // Static resolution - defaults to user's initial resolution or custom resolution
+        this.renderWidth = customWidth || window.innerWidth;
+        this.renderHeight = customHeight || window.innerHeight;
 
         // Iteration calculation constants
         this.BASE_ITERATIONS = 512;
@@ -45,8 +49,9 @@ class MandelbrotViewer {
     }
 
     resizeCanvas() {
-        this.canvas.width = window.innerWidth;
-        this.canvas.height = window.innerHeight;
+        // Set canvas to static resolution (defaults to user's initial resolution)
+        this.canvas.width = this.renderWidth;
+        this.canvas.height = this.renderHeight;
         this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
     }
 
@@ -254,11 +259,6 @@ class MandelbrotViewer {
         window.addEventListener('keyup', (e) => {
             this.keys[e.key.toLowerCase()] = false;
         });
-
-        // Window resize
-        window.addEventListener('resize', () => {
-            this.resizeCanvas();
-        });
     }
 
     handleKeyboardPanning() {
@@ -346,6 +346,11 @@ class MandelbrotViewer {
 }
 
 // Initialize when page loads
+// The viewer uses a static resolution that defaults to the user's initial screen resolution
+// To use a custom resolution, pass width and height parameters:
+// new MandelbrotViewer(1920, 1080); // For 1920x1080 resolution
+// new MandelbrotViewer(2560, 1440); // For 2560x1440 resolution
+// Or call with no parameters to use the current window size:
 window.addEventListener('DOMContentLoaded', () => {
     new MandelbrotViewer();
 });
