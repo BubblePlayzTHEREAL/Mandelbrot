@@ -51,6 +51,8 @@ Then open your browser to `http://localhost:8000`
 
 The viewer uses WebGL fragment shaders to calculate the Mandelbrot set in parallel on your GPU. Each pixel is computed independently, allowing for real-time exploration even at high zoom levels. The shader automatically increases the maximum iteration count as you zoom in to maintain detail.
 
+At extreme zoom levels (beyond ~200,000x), the viewer employs **double precision emulation** using double-single (DS) arithmetic. This technique splits each coordinate into two 32-bit floats (high and low parts) to overcome the precision limitations of GPU float32 operations, enabling clean rendering at zoom levels where standard implementations would show significant pixelation.
+
 ### Resolution Configuration
 
 By default, the viewer renders at a static resolution that matches your initial screen resolution when the page loads. This ensures consistent rendering quality and performance regardless of window resizing.
@@ -82,3 +84,4 @@ The canvas will automatically scale to fit your browser window while maintaining
 - Dynamic iteration count adjustment based on zoom level
 - Full-screen canvas with responsive design
 - Optimized shader code for maximum performance
+- **Double precision emulation** for extreme zoom levels (beyond 200,000x) using double-single arithmetic to overcome GPU 32-bit float limitations
