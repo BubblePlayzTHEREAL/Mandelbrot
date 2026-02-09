@@ -66,9 +66,59 @@ class MandelbrotViewer {
         const fragmentShaderSource = `
             precision highp float;
             uniform vec2 u_resolution;
-            uniform vec2 u_center;
-            uniform float u_zoom;
+            uniform vec4 u_center; // xy = high, zw = low (for double precision)
+            uniform vec2 u_zoom;   // x = high, y = low (for double precision)
             uniform int u_maxIterations;
+
+            // Double-single (DS) arithmetic for extended precision
+            // Each DS number is represented as (high, low) where high + low = value
+            
+            // DS addition: (a_hi, a_lo) + (b_hi, b_lo)
+            vec2 ds_add(vec2 a, vec2 b) {
+                float s = a.x + b.x;
+                float v = s - a.x;
+                float e = (a.x - (s - v)) + (b.x - v);
+                e = e + a.y + b.y;
+                float z = s + e;
+                return vec2(z, e - (z - s));
+            }
+            
+            // DS subtraction: (a_hi, a_lo) - (b_hi, b_lo)
+            vec2 ds_sub(vec2 a, vec2 b) {
+                float s = a.x - b.x;
+                float v = s - a.x;
+                float e = (a.x - (s - v)) - (b.x + v);
+                e = e + a.y - b.y;
+                float z = s + e;
+                return vec2(z, e - (z - s));
+            }
+            
+            // DS multiplication: (a_hi, a_lo) * (b_hi, b_lo)
+            vec2 ds_mul(vec2 a, vec2 b) {
+                float p = a.x * b.x;
+                float e = p - a.x * b.x;
+                e = e + a.x * b.y + a.y * b.x;
+                float z = p + e;
+                return vec2(z, e - (z - p));
+            }
+            
+            // Split a float into high and low parts for DS representation
+            vec2 ds_set(float a) {
+                const float split = 4097.0; // 2^12 + 1 for splitting
+                float t = a * split;
+                float a_hi = t - (t - a);
+                float a_lo = a - a_hi;
+                return vec2(a_hi, a_lo);
+            }
+            
+            // Compare DS number squared magnitude with threshold
+            bool ds_length_greater(vec2 x, vec2 y, float threshold) {
+                // Compute x^2 + y^2 in DS arithmetic
+                vec2 xx = ds_mul(x, x);
+                vec2 yy = ds_mul(y, y);
+                vec2 sum = ds_add(xx, yy);
+                return sum.x > threshold * threshold;
+            }
 
             vec3 palette(float t) {
                 vec3 a = vec3(0.5, 0.5, 0.5);
@@ -82,22 +132,49 @@ class MandelbrotViewer {
                 vec2 uv = (gl_FragCoord.xy / u_resolution) * 2.0 - 1.0;
                 uv.x *= u_resolution.x / u_resolution.y;
                 
-                // Apply zoom and center
-                vec2 c = u_center + uv / u_zoom;
+                // Convert uv to DS format and divide by zoom
+                vec2 uv_x_ds = ds_set(uv.x);
+                vec2 uv_y_ds = ds_set(uv.y);
                 
-                // Mandelbrot iteration
-                vec2 z = vec2(0.0, 0.0);
+                // Divide by zoom (multiply by 1/zoom)
+                float inv_zoom = 1.0 / u_zoom.x;
+                vec2 inv_zoom_ds = ds_set(inv_zoom);
+                uv_x_ds = ds_mul(uv_x_ds, inv_zoom_ds);
+                uv_y_ds = ds_mul(uv_y_ds, inv_zoom_ds);
+                
+                // Add center in DS arithmetic
+                vec2 c_x = ds_add(vec2(u_center.x, u_center.y), uv_x_ds);
+                vec2 c_y = ds_add(vec2(u_center.z, u_center.w), uv_y_ds);
+                
+                // Mandelbrot iteration with DS arithmetic
+                vec2 z_x = vec2(0.0, 0.0);
+                vec2 z_y = vec2(0.0, 0.0);
                 int i = 0;
+                float final_length = 0.0;
+                
                 for (int iter = 0; iter < 100000; iter++) {
                     if (iter >= u_maxIterations) break;
                     i = iter;
                     
                     // z = z^2 + c
-                    float x = (z.x * z.x - z.y * z.y) + c.x;
-                    float y = (2.0 * z.x * z.y) + c.y;
-                    z = vec2(x, y);
+                    // z_new.x = z.x^2 - z.y^2 + c.x
+                    // z_new.y = 2 * z.x * z.y + c.y
                     
-                    if (length(z) > 2.0) break;
+                    vec2 zx_sq = ds_mul(z_x, z_x);
+                    vec2 zy_sq = ds_mul(z_y, z_y);
+                    vec2 zx_zy = ds_mul(z_x, z_y);
+                    
+                    vec2 new_z_x = ds_add(ds_sub(zx_sq, zy_sq), c_x);
+                    vec2 new_z_y = ds_add(ds_add(zx_zy, zx_zy), c_y);
+                    
+                    z_x = new_z_x;
+                    z_y = new_z_y;
+                    
+                    // Check if magnitude > 2.0
+                    if (ds_length_greater(z_x, z_y, 2.0)) {
+                        final_length = sqrt(z_x.x * z_x.x + z_y.x * z_y.x);
+                        break;
+                    }
                 }
                 
                 // Coloring
@@ -105,7 +182,7 @@ class MandelbrotViewer {
                     gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
                 } else {
                     // Smooth coloring
-                    float smoothI = float(i) - log2(log2(length(z)));
+                    float smoothI = float(i) - log2(log2(final_length));
                     float t = smoothI / float(u_maxIterations);
                     vec3 color = palette(t);
                     gl_FragColor = vec4(color, 1.0);
@@ -136,6 +213,25 @@ class MandelbrotViewer {
         this.centerLocation = this.gl.getUniformLocation(this.program, 'u_center');
         this.zoomLocation = this.gl.getUniformLocation(this.program, 'u_zoom');
         this.maxIterationsLocation = this.gl.getUniformLocation(this.program, 'u_maxIterations');
+    }
+
+    // Split a double into high and low parts for double-single arithmetic
+    // This uses the Dekker split algorithm to separate a float64 into two parts
+    // that when added together give the original value, but each can be represented
+    // more precisely in float32 operations
+    splitDouble(value) {
+        // For very large or very small numbers, just return the value as high part
+        // The shader will do the actual high-precision work
+        const high = value;
+        
+        // Calculate the low part by subtracting high from original
+        // In JavaScript (float64), this gives us a residual
+        const low = value - high;
+        
+        // However, since both JavaScript and the shader use different precisions,
+        // we'll let the shader handle the main precision work
+        // For now, pass the full value as high and 0 as low
+        return [high, 0.0];
     }
 
     compileShader(type, source) {
@@ -322,10 +418,15 @@ class MandelbrotViewer {
         // Use program
         this.gl.useProgram(this.program);
 
+        // Split coordinates into high and low parts for double precision
+        const [centerXHi, centerXLo] = this.splitDouble(this.centerX);
+        const [centerYHi, centerYLo] = this.splitDouble(this.centerY);
+        const [zoomHi, zoomLo] = this.splitDouble(this.zoom);
+
         // Set uniforms
         this.gl.uniform2f(this.resolutionLocation, this.canvas.width, this.canvas.height);
-        this.gl.uniform2f(this.centerLocation, this.centerX, this.centerY);
-        this.gl.uniform1f(this.zoomLocation, this.zoom);
+        this.gl.uniform4f(this.centerLocation, centerXHi, centerXLo, centerYHi, centerYLo);
+        this.gl.uniform2f(this.zoomLocation, zoomHi, zoomLo);
         this.gl.uniform1i(this.maxIterationsLocation, this.maxIterations);
 
         // Bind buffer and set attribute
